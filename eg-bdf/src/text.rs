@@ -54,10 +54,23 @@ impl<'a, C: PixelColor> BdfTextStyle<'a, C> {
             ..self
         }
     }
+    pub fn reset_strikethrough(self) -> Self {
+        Self {
+            strikethrough_color: DecorationColor::None,
+            ..self
+        }
+    }
 
     pub fn underline(self) -> Self {
         Self {
             underline_color: DecorationColor::TextColor,
+            ..self
+        }
+    }
+
+    pub fn reset_underline(self) -> Self {
+        Self {
+            underline_color: DecorationColor::None,
             ..self
         }
     }
@@ -77,8 +90,8 @@ impl<'a, C: PixelColor> BdfTextStyle<'a, C> {
         match baseline {
             Baseline::Top => -(self.line_height() as i32 - 1),
             Baseline::Middle => -(self.line_height() as i32 - 1) / 2,
-            Baseline::Bottom => self.font.font_descent as i32,
             Baseline::Alphabetic => 0,
+            Baseline::Bottom => self.font.font_descent as i32,
         }
     }
 
@@ -190,21 +203,15 @@ impl<C: PixelColor> TextRenderer for BdfTextStyle<'_, C> {
             .map(|c| self.font.get_glyph(c).device_width)
             .sum();
 
-        let height = self.line_height() as i32;
+        let height = self.line_height() as i32; //+ self.font.font_descent;
+        let full_height = height + self.font.font_descent as i32;
 
-        let v_anchor = match baseline {
-            Baseline::Top => Point::zero(),
-            Baseline::Bottom => Point::new(0, -(height + self.font.font_descent as i32)),
-            Baseline::Middle => Point::new(0, -height / 2),
-            Baseline::Alphabetic => Point::new(0, -height),
-        };
+        let pos_adj = position - Point::new(0, self.baseline_offset(baseline) + height);
+        let size = Size::new(string_width, full_height as u32);
 
         TextMetrics {
-            bounding_box: Rectangle::new(
-                position + v_anchor,
-                Size::new(string_width, height as u32),
-            ),
-            next_position: position + Size::new(string_width, 0),
+            bounding_box: Rectangle::new(pos_adj, size),
+            next_position: position + size.x_axis(),
         }
     }
 
