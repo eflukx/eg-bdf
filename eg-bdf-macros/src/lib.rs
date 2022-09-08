@@ -156,14 +156,12 @@ fn glyph_literal(glyph: &Glyph, start_index: usize) -> (Vec<bool>, proc_macro2::
 pub fn include_bdf(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as IncludeBdf);
 
-    // TODO: handle errors
-    let mut path = PathBuf::from(std::env::var_os("CARGO_MANIFEST_DIR").unwrap());
-    path.push(&input.filename.value());
+    let app_path = PathBuf::from(std::env::var_os("CARGO_MANIFEST_DIR").unwrap());
+    let filename = input.filename.value();
+    let path = app_path.join(&filename);
 
-    // TODO: handle errors
-    let bdf = fs::read(&path).unwrap();
-
-    let font = BdfFont::parse(&bdf).unwrap();
+    let bdf = fs::read(&path).expect("Reading of BDF file failed");
+    let font = BdfFont::parse(&bdf).expect("Parsing of BDF file failed");
 
     let mut data = Vec::new();
     let mut glyphs = Vec::new();
@@ -194,13 +192,17 @@ pub fn include_bdf(input: TokenStream) -> TokenStream {
     let data = bits_to_bytes(&data);
 
     // TODO: report error or calculate fallback value
-    let line_height = font.properties.try_get::<i32>(Property::PixelSize).unwrap() as u32;
+    let pixel_size = font.properties.try_get::<i32>(Property::PixelSize).unwrap() as u32;
+    let font_ascent = font.properties.try_get::<i32>(Property::FontAscent).unwrap() as u32;
+    let font_descent = font.properties.try_get::<i32>(Property::FontDescent).unwrap() as u32;
 
     let output = quote! {
         ::eg_bdf::BdfFont {
             glyphs: &[ #( #glyphs ),* ],
             data: &[ #( #data ),* ],
-            line_height: #line_height,
+            pixel_size: #pixel_size,
+            font_ascent: #font_ascent,
+            font_descent: #font_descent,
             replacement_character: #replacement_character,
         }
     };
