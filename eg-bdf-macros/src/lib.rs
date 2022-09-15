@@ -192,9 +192,9 @@ pub fn include_bdf(input: TokenStream) -> TokenStream {
     let data = bits_to_bytes(&data);
 
     // TODO: report error or calculate fallback value
-    let pixel_size = font.properties.try_get::<i32>(Property::PixelSize).unwrap() as u32;
-    let font_ascent = font.properties.try_get::<i32>(Property::FontAscent).unwrap() as u32;
-    let font_descent = font.properties.try_get::<i32>(Property::FontDescent).unwrap() as u32;
+    let pixel_size = font.properties.try_get::<i32>(Property::PixelSize).unwrap_or_default() as u32;
+    let font_ascent = font.properties.try_get::<i32>(Property::FontAscent).unwrap_or(pixel_size as i32) as u32;
+    let font_descent = font.properties.try_get::<i32>(Property::FontDescent).unwrap_or(pixel_size as i32) as u32;
 
     let output = quote! {
         ::eg_bdf::BdfFont {

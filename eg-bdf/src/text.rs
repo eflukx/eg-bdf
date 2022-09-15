@@ -26,7 +26,8 @@ pub struct BdfTextStyle<'a, C> {
     strikethrough_color: DecorationColor<C>,
 
     /// Set relative line spacing, default when zero
-    line_spacing: i32,
+    /// Use with care, use small values to tune certain fonts. YMMV
+    height_adjust: i32,
 }
 
 impl<'a, C: PixelColor> BdfTextStyle<'a, C> {
@@ -35,7 +36,7 @@ impl<'a, C: PixelColor> BdfTextStyle<'a, C> {
             font,
             text_color: color,
             background_color: None,
-            line_spacing: 0,
+            height_adjust: 0,
             underline_color: DecorationColor::None,
             strikethrough_color: DecorationColor::None,
         }
@@ -75,15 +76,19 @@ impl<'a, C: PixelColor> BdfTextStyle<'a, C> {
         }
     }
 
-    pub fn with_line_spacing(self, line_spacing: i32) -> Self {
+    pub fn with_height_adjust(self, height_adjust: i32) -> Self {
         Self {
-            line_spacing,
+            height_adjust,
             ..self
         }
     }
 
-    pub fn set_line_spacing(&mut self, line_spacing: i32) {
-        self.line_spacing = line_spacing;
+    pub fn set_height_adjust(&mut self, height_adjust: i32) {
+        self.height_adjust = height_adjust;
+    }
+
+    pub fn full_height(&self) -> u32 {
+        ((self.font.font_ascent + self.font.font_descent) as i32 + self.height_adjust) as u32
     }
 
     fn baseline_offset(&self, baseline: Baseline) -> i32 {
@@ -216,6 +221,6 @@ impl<C: PixelColor> TextRenderer for BdfTextStyle<'_, C> {
     }
 
     fn line_height(&self) -> u32 {
-        (self.font.font_ascent as i32 + self.line_spacing).max(0) as u32
+        (self.font.font_ascent as i32 + self.height_adjust).max(0) as u32
     }
 }
